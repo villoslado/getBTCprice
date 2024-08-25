@@ -1,46 +1,37 @@
-from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
 import requests
+from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
 API_KEY = os.getenv("CMC_API_KEY")
-url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/ohlcv/historical"
-headers = {
-    "Accepts": "application/json",
-    "X-CMC_PRO_API_KEY": API_KEY,
-}
-
-crypto_symbol = "BTC"
-convert_currencies = "USD,MXN"
-yday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
-
-params = {
-    "symbol": crypto_symbol,
-    "time_period": "daily",
-    "time_start": yday,
-    "time_end": yday,
-    "convert": convert_currencies,
-}
-
-response = requests.get(
-    url,
-    headers=headers,
-    params=params,
-)
+url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
+headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": API_KEY}
+params = {"symbol": "BTC", "convert": "USD"}
+response = requests.get(url, headers=headers, params=params)
 
 if response.status_code == 200:
     data = response.json()
-    ohlcv_data = data["data"]["quotes"][0]["quote"]
+    btc_info = data["data"]["BTC"][0]
 
-    usd_data = ohlcv_data["USD"]
-    mxn_data = ohlcv_data["MXN"]
+    name = btc_info["name"]
+    circulating_supply = btc_info["circulating_supply"]
+    last_updated = btc_info["last_updated"]
 
-    print(f"OHLC data for Bitcoin on {yday} in USD:")
-    print(f"Close: {usd_data['close']}")
-    print(f"\nOHLC data for Bitcoin on {yday} in MXN:")
-    print(f"Close: {mxn_data['close']}")
+    quote = btc_info["quote"]["USD"]
+    price = quote["price"]
+    volume_24h = quote["volume_24h"]
+    volume_change_24h = quote["volume_change_24h"]
+    market_cap = quote["market_cap"]
+    market_cap_dominance = quote["market_cap_dominance"]
+
+    print(f"Name: {name}")
+    print(f"Circulating Supply: {circulating_supply:,.0f}")
+    print(f"Last Updated: {last_updated}")
+    print(f"Price: ${price:,.0f}")
+    print(f"24h Volume: ${volume_24h:,.0f}")
+    print(f"24h Volume Change: {volume_change_24h:.1f}%")
+    print(f"Market Cap: ${market_cap:,.0f}")
+    print(f"Market Cap Dominance: {market_cap_dominance:.1f}%")
 
 else:
     print(f"Error fetching data: {response.status_code}, {response.text}")
